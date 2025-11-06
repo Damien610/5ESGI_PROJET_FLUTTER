@@ -1,5 +1,3 @@
-// lib/models/event.dart
-
 class Event {
   final String id;
   final String name;
@@ -22,19 +20,15 @@ class Event {
   });
 
   factory Event.fromJson(Map<String, dynamic> json) {
-    // --- AMÉLIORATION : Fonction pour extraire le lieu de manière flexible ---
     String extractVenue(Map<String, dynamic> json) {
-      // Cas 1 : Le lieu est dans _embedded (structure la plus courante)
       if (json.containsKey('_embedded') &&
           json['_embedded']['venues'] != null &&
           json['_embedded']['venues'].isNotEmpty) {
         return json['_embedded']['venues'][0]['name'] ?? 'Lieu non spécifié';
       }
-      // Cas 2 : Le lieu est dans `place` (structure de repli)
       if (json.containsKey('place') && json['place']['city'] != null) {
         return json['place']['city']['name'] ?? 'Lieu non spécifié';
       }
-      // Cas par défaut
       return 'Lieu non spécifié';
     }
 
@@ -43,8 +37,8 @@ class Event {
         return null;
       }
       final goodQualityImage = images.firstWhere(
-            (img) => img['ratio'] == '16_9' && img['width'] >= 640, // >= 640 pour plus de flexibilité
-        orElse: () => images[0], // S'il n'y en a pas, prend la première
+            (img) => img['ratio'] == '16_9' && img['width'] >= 640,
+        orElse: () => images[0],
       );
       return goodQualityImage['url'];
     }
@@ -54,14 +48,12 @@ class Event {
       name: json['name'] ?? 'Sans titre',
       url: json['url'],
 
-      // La description est parfois directement disponible
       description: json['description'] ?? json['info'] ?? json['pleaseNote'],
 
       imageUrl: findBestImage(json['images']),
       date: json['dates']?['start']?['localDate'] ?? 'Date inconnue',
       category: json['classifications']?[0]?['segment']?['name'] ?? 'Non classé',
 
-      // On utilise notre nouvelle fonction robuste pour le lieu
       venue: extractVenue(json),
     );
   }

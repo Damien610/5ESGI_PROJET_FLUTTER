@@ -11,22 +11,33 @@ class EventProvider extends ChangeNotifier {
 
   String? _city;
   String? _selectedCategory;
-  final List<String> _categories = ['Tout', 'Music', 'Sport', 'Miscellaneous', 'Arts & Theatre'];
+  final List<String> _categories = ['Tout', 'Music', 'Sport', 'Miscellaneous', 'Art'];
+
+  String _countryCode = 'FR';
 
   final Set<String> _favoriteEventIds = {};
 
   List<Event> get events => _events;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
-
   String? get city => _city;
   String? get selectedCategory => _selectedCategory;
   List<String> get categories => _categories;
-
   Set<String> get favoriteEventIds => _favoriteEventIds;
+
+  String get countryCode => _countryCode;
 
   EventProvider() {
     fetchEvents();
+  }
+
+  Future<void> setCountryCode(String newCountryCode) async {
+    if (_countryCode == newCountryCode) return;
+
+    _countryCode = newCountryCode;
+    _city = null;
+    notifyListeners();
+    await fetchEvents();
   }
 
   Future<void> setCity(String newCity) async {
@@ -40,11 +51,9 @@ class EventProvider extends ChangeNotifier {
   }
 
   Future<void> setCategory(String newCategory) async {
-    if (_selectedCategory == newCategory) {
-      _selectedCategory = null;
-    } else {
-      _selectedCategory = newCategory;
-    }
+    final isDeselecting = _selectedCategory == newCategory || newCategory == 'Tout';
+    _selectedCategory = isDeselecting ? null : newCategory;
+
     notifyListeners();
     await fetchEvents();
   }
@@ -53,10 +62,12 @@ class EventProvider extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
 
-    final categoryToFetch = (_selectedCategory == 'Tout') ? null : _selectedCategory;
-
     try {
-      _events = await _eventRepository.getEvents(city: _city, category: categoryToFetch);
+      _events = await _eventRepository.getEvents(
+        city: _city,
+        category: _selectedCategory,
+        countryCode: _countryCode,
+      );
       _errorMessage = null;
     } catch (e) {
       _errorMessage = e.toString();
