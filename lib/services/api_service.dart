@@ -5,9 +5,7 @@ import 'package:http/http.dart' as http;
 import '../models/event.dart';
 
 class ApiService {
-  // --- CORRECTION 1 : Suppression de l'espace au début de la clé ---
   final String _apiKey = 'TwCKnl5Y8ycdiUsGL8jmAJiDqfhBxMpm';
-  // Pas d'espace avant !
 
   Future<List<Event>> fetchEvents({String? city, String? keyword, String? category}) async {
     final Map<String, dynamic> queryParameters = {
@@ -23,8 +21,6 @@ class ApiService {
       queryParameters['keyword'] = keyword;
     }
 
-    // --- CORRECTION 2 : Ajout du filtre par catégorie (classificationName) ---
-    // L'API Ticketmaster utilise `classificationName` pour filtrer par catégorie comme "Musique", "Sport", etc.
     if (category != null && category.isNotEmpty) {
       queryParameters['classificationName'] = category;
     }

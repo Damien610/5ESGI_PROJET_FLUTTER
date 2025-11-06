@@ -56,7 +56,6 @@ class FavoritesScreen extends StatelessWidget {
                 ),
               );
             },
-            // La fonction toggleFavorite du provider fonctionne parfaitement.
             onFavorite: () => provider.toggleFavorite(event),
           );
         },
