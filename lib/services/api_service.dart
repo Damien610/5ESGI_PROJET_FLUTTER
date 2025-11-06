@@ -1,35 +1,61 @@
+// lib/services/api_service.dart
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/event.dart';
-import 'mock_data.dart';
 
 class ApiService {
-  static const String apiKey = 'TwCKnl5Y8ycdiUsGL8jmAJiDqfhBxMpm';
-  static const String baseUrl = 'https://app.ticketmaster.com/discovery/v2';
+  // --- CORRECTION 1 : Suppression de l'espace au début de la clé ---
+  final String _apiKey = 'TwCKnl5Y8ycdiUsGL8jmAJiDqfhBxMpm';
+  // Pas d'espace avant !
 
-  Future<List<Event>> fetchEvents({String? city, String? category}) async {
-    final params = {
-      'apikey': apiKey,
-      'size': '20',
-      if (city != null && city.isNotEmpty) 'city': city,
-      if (category != null && category != 'Tous') 'classificationName': category,
+  Future<List<Event>> fetchEvents({String? city, String? keyword, String? category}) async {
+    final Map<String, dynamic> queryParameters = {
+      'apikey': _apiKey,
+      'size': '50',
+      'sort': 'date,asc',
     };
 
-    final uri = Uri.parse('$baseUrl/events.json').replace(queryParameters: params);
-    
+    if (city != null && city.isNotEmpty) {
+      queryParameters['city'] = city;
+    }
+    if (keyword != null && keyword.isNotEmpty) {
+      queryParameters['keyword'] = keyword;
+    }
+
+    // --- CORRECTION 2 : Ajout du filtre par catégorie (classificationName) ---
+    // L'API Ticketmaster utilise `classificationName` pour filtrer par catégorie comme "Musique", "Sport", etc.
+    if (category != null && category.isNotEmpty) {
+      queryParameters['classificationName'] = category;
+    }
+
+    final uri = Uri.https('app.ticketmaster.com', '/discovery/v2/events.json', queryParameters);
+
+    debugPrint('----------------------------------');
+    debugPrint('API Call URL: $uri');
+
     try {
       final response = await http.get(uri);
-      
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        final events = (data['_embedded']?['events'] as List?)
-            ?.map((e) => Event.fromJson(e))
-            .toList() ?? [];
-        return events.isNotEmpty ? events : MockData.getMockEvents();
+
+      debugPrint('API Response Status Code: ${response.statusCode}');
+      if (response.statusCode != 200) {
+        debugPrint('API Error Body: ${response.body}');
+        throw Exception('Échec du chargement (Code: ${response.statusCode})');
       }
-      return MockData.getMockEvents();
+
+      final Map<String, dynamic> data = json.decode(response.body);
+
+      if (data.containsKey('_embedded')) {
+        final List<dynamic> eventList = data['_embedded']['events'];
+        debugPrint('${eventList.length} events found in the response.');
+        return eventList.map((json) => Event.fromJson(json)).toList();
+      } else {
+        debugPrint('No "_embedded" key found. Returning empty list.');
+        return [];
+      }
     } catch (e) {
-      return MockData.getMockEvents();
+      debugPrint('An error occurred during API call: $e');
+      throw Exception('Une erreur est survenue: $e');
     }
   }
 }
